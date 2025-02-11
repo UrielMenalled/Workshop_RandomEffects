@@ -1,0 +1,20 @@
+---
+title: "Random effects demo"
+output: github_document
+---
+
+#Loading
+```{r Packages}
+library(lmerTest)
+library(tidyverse)
+```
+
+Today we will be using a subset of data published in Menalled et al. (2023): https://doi.org/10.1038/s41598-023-43987-x
+
+This experiment looks at changes in weed communities across 10 cover crop treatments (5 summer cover crop treatments, 5 winter cover crop treatments). Today, we will just work with winter cover crops (i.e. tilled control, canola, cereal rye (CR), hairy vetch (HV), and HV x CR mix).
+
+Here is a nice picture of the map and experimental design of the data we are working with today
+```{r Data}
+read.csv()
+```
+
