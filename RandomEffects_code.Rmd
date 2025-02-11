@@ -19,5 +19,30 @@ Here is a nice picture of the map and experimental design of the data we are wor
 ![](Example_MapDesign.png){width="452"}
 
 ```{r Data}
-#read.csv()
+#Each year is stored separately, I'll load them in, calculate total weed biomass, and combind the dataframes
+WintData1_tmp <- read.csv("https://ecommons.cornell.edu/server/api/core/bitstreams/adb24a0c-0b2c-4bd6-90ad-e203c270bba3/content")
+WintData2_tmp <- read.csv("https://ecommons.cornell.edu/server/api/core/bitstreams/f05bf7b9-3c15-48ec-9f28-0c978cf0560b/content")
+
+str(WintData1_tmp) #loaded in nicely
+str(WintData2_tmp) #loaded in nicely
+
+#We don't want to do weed community analysis today, just simple models of total weed biomass
+WintData1 <-
+  WintData1_tmp %>% 
+  rowwise() %>%
+  mutate(WeedBiomass = sum(c_across(-c(Trial, Year, Site, Block, Plot, CoverCrop, CoverCropBiomass, canola, 
+                                       cereal.rye, hairy.vetch)), na.rm = FALSE)) %>% 
+  ungroup() %>% 
+  select(Year, Site, Block, Plot, CoverCrop,WeedBiomass)
+
+WintData2 <-
+  WintData2_tmp %>% 
+  rowwise() %>%
+  mutate(WeedBiomass = sum(c_across(-c(Trial, Year, Site, Block, Plot, CoverCrop, CoverCropBiomass, canola, 
+                                       cereal.rye, hairy.vetch)), na.rm = FALSE)) %>%
+  ungroup() %>% 
+  select(Year, Site, Block, Plot, CoverCrop,WeedBiomass)
+
+#Combine data frames
+WintData <- bind_rows(WintData1,WintData2)
 ```
