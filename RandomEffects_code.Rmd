@@ -7,7 +7,12 @@ output: github_document
 
 ```{r Packages}
 library(lmerTest)
+library(performance)
+library(glmmTMB)
+library(DHARMa)
 library(tidyverse)
+
+options(contrasts = c("contr.sum", "contr.poly")) #setting contrasts
 ```
 
 Today we will be using a subset of data published in Menalled et al. (2023): <https://doi.org/10.1038/s41598-023-43987-x>
@@ -56,6 +61,40 @@ I want to see how weed biomass is impacted by cover crop treatment, basically We
 
 3.  Cover crop treatments are within blocks, this is the level at which I made my observations.
 
-As nice it would be to account for Site and Year through a random effect, we don't have enough levels of either group. Remember we need at least three groups per variable for it to be a random effect. Thus, these variables will be fixed effects. On the other hand, block has 16 levels across site-years, it can be a random effect! As for CoverCrop, this is the level of observation, it does not need to be a random effect.
+As nice it would be to account for Site and Year through a random effect, we don't have enough levels of either group. Remember we need at least three groups per variable for it to be a random effect. Thus, these variables will be fixed effects. On the other hand, site.year has 4 groups (iffy, but let's just try) and block has 16 levels across site-years (nice, that's a solid amount of groups for a RE). As for CoverCrop, this is the level of observation, it does not need to be a random effect.
 
 ![Here is a nice picture of the map and experimental design of the data we are working with today](Example_MapDesign.png){width="452"}
+
+```{r}
+#create Site.Year variable
+WintData$Site.Year <- paste(WintData$Site,WintData$Year,sep = ".")
+WintData$Site.Year <- as.factor(WintData$Site.Year)
+
+
+#let's get a sense of what we are working with...
+#We'll probably be working with a Tweedie glmer because 
+plot(WeedBiomass~1, data = WintData) #a cluster of points with near zero weed biomass, probably 
+plot(WeedBiomass~CoverCrop*Site*Year, data = WintData) #non-normally distributed around treatments
+
+#let's get modeling
+
+#simple lmer first
+WeedBio_Mod1 <- lmer(WeedBiomass~Site*Year + CoverCrop + (1|Site.Year/Block), data = WintData)
+#singularity issues from RE of Block:Site.Year = 0, could be okay if anova DF are good
+summary(WeedBio_Mod1) #RE captured correctly because number of groups in RE follows design
+plot(WeedBio_Mod1) #terrible, as expected
+check_model(WeedBio_Mod1) #I'm mainly interested in pp_check (looks bad) and random effects check (looks okay)
+
+anova(WeedBio_Mod1) #while numerator DF look good, denominator degrees of freedom are 0, this comes from the singularity and is WRONG 
+anova(WeedBio_Mod1, ddf = "Kenward-Roger") #numerator AND denominator DF look good. Denominator df are all less then measurement number (80 plots) so good. If I added some predictor variable at a higher level then, it would have to have less denominator degrees of freedom than it's replication (i.e. if soil type was only across site.year.block, then its DenDF should not be more than 16)
+
+#now glmer
+WeedBio_Mod2 <- glmmTMB(WeedBiomass~Site*Year + CoverCrop + (1|Site.Year/Block),
+                        family = tweedie(link = "log"),
+                        data = WintData)
+summary(WeedBio_Mod2) #RE captured correctly because number of groups in RE follows design
+simulateResiduals(WeedBio_Mod2, plot = TRUE) #much better, good enough to publish
+check_model(WeedBio_Mod2) #pp_check still shows some error around 0. All RE look good. Good enough!
+car::Anova(WeedBio_Mod2, type = 3) #unfortunately only car::Anova is possible for glmmTMB. but no singularity warning, so I feel good 
+```
+
