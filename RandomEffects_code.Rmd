@@ -14,11 +14,7 @@ Today we will be using a subset of data published in Menalled et al. (2023): <ht
 
 This experiment looks at changes in weed communities across 10 cover crop treatments (5 summer cover crop treatments, 5 winter cover crop treatments). Today, we will just work with winter cover crops (i.e. tilled control, canola, cereal rye (CR), hairy vetch (HV), and HV x CR mix).
 
-Here is a nice picture of the map and experimental design of the data we are working with today
-
-![](Example_MapDesign.png){width="452"}
-
-```{r Data}
+```{r Data, echo = T, results = 'hide'}
 #Each year is stored separately, I'll load them in, calculate total weed biomass, and combind the dataframes
 WintData1_tmp <- read.csv("https://ecommons.cornell.edu/server/api/core/bitstreams/adb24a0c-0b2c-4bd6-90ad-e203c270bba3/content")
 WintData2_tmp <- read.csv("https://ecommons.cornell.edu/server/api/core/bitstreams/f05bf7b9-3c15-48ec-9f28-0c978cf0560b/content")
@@ -44,5 +40,22 @@ WintData2 <-
   select(Year, Site, Block, Plot, CoverCrop,WeedBiomass)
 
 #Combine data frames
-WintData <- bind_rows(WintData1,WintData2)
+WintData_tmp <- bind_rows(WintData1,WintData2)
+
+WintData <- WintData_tmp %>% mutate(across(-WeedBiomass, as.factor))
+str(WintData) #looks good!
 ```
+
+#Modeling
+
+I want to see how weed biomass is impacted by cover crop treatment, basically WeedBiomass\~CoverCrop. However, my experiment has clear nesting! I must account for non-independence through a model with more fixed and/or random effects. Looking at my experimental design (picture below) we can see that there are **three** *total* levels.
+
+1.  Site and Year are at an equal level because both sites are in both years and visa versa. there are 2 levels of each site and year
+
+2.  Block is within Site and Year. I know this because we used different fields in each site year, so block 1 in Musgrave during year 1 **is not** the same as block 1 in Musgrave during year 2. Because each block is within a unique site year, there are 2 sites x 2 years x 4 blocks = 16 groups.
+
+3.  Cover crop treatments are within blocks, this is the level at which I made my observations.
+
+As nice it would be to account for Site and Year through a random effect, we don't have enough levels of either group. Remember we need at least three groups per variable for it to be a random effect. Thus, these variables will be fixed effects. On the other hand, block has 16 levels across site-years, it can be a random effect! As for CoverCrop, this is the level of observation, it does not need to be a random effect.
+
+![Here is a nice picture of the map and experimental design of the data we are working with today](Example_MapDesign.png){width="452"}
