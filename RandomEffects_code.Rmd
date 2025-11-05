@@ -1,6 +1,8 @@
 ---
 title: "Random effects demo"
 output: github_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 #Loading
@@ -85,7 +87,7 @@ summary(WeedBio_Mod1) #RE captured correctly because number of groups in RE foll
 plot(WeedBio_Mod1) #terrible, as expected
 check_model(WeedBio_Mod1) #I'm mainly interested in pp_check (looks bad) and random effects check (looks okay)
 
-anova(WeedBio_Mod1) #while numerator DF look good, denominator degrees of freedom are 0, this comes from the singularity and is WRONG 
+anova(WeedBio_Mod1) #while numerator DF look good, denominator degrees of freedom are 0, this comes from the singularity and is WRONG <-- this last comment seems to not apply anymore (Nov. 2025) but still, if DFs are off, that's an issue!
 anova(WeedBio_Mod1, ddf = "Kenward-Roger") #numerator AND denominator DF look good. Denominator df are all less then measurement number (80 plots) so good. If I added some predictor variable at a higher level then, it would have to have less denominator degrees of freedom than it's replication (i.e. if soil type was only across site.year.block, then its DenDF should not be more than 16)
 
 #now glmer
