@@ -24,29 +24,22 @@ library(lmerTest)
 
 ``` r
 library(performance)
-```
-
-    ## Warning: package 'performance' was built under R version 4.4.1
-
-``` r
 library(glmmTMB)
 library(DHARMa)
 ```
 
-    ## This is DHARMa 0.4.6. For overview type '?DHARMa'. For recent changes, type news(package = 'DHARMa')
+    ## This is DHARMa 0.4.7. For overview type '?DHARMa'. For recent changes, type news(package = 'DHARMa')
 
 ``` r
 library(tidyverse)
 ```
 
-    ## Warning: package 'lubridate' was built under R version 4.4.1
-
     ## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
     ## ✔ dplyr     1.1.4     ✔ readr     2.1.5
     ## ✔ forcats   1.0.0     ✔ stringr   1.5.1
-    ## ✔ ggplot2   3.5.1     ✔ tibble    3.2.1
+    ## ✔ ggplot2   3.5.2     ✔ tibble    3.3.0
     ## ✔ lubridate 1.9.4     ✔ tidyr     1.3.1
-    ## ✔ purrr     1.0.2
+    ## ✔ purrr     1.1.0
 
     ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
     ## ✖ tidyr::expand() masks Matrix::expand()
@@ -229,7 +222,7 @@ check_model(WeedBio_Mod1) #I'm mainly interested in pp_check (looks bad) and ran
 ![](RandomEffects_code_files/figure-gfm/unnamed-chunk-1-6.png)<!-- -->
 
 ``` r
-anova(WeedBio_Mod1) #while numerator DF look good, denominator degrees of freedom are 0, this comes from the singularity and is WRONG 
+anova(WeedBio_Mod1) #while numerator DF look good, denominator degrees of freedom are 0, this comes from the singularity and is WRONG <-- this last comment seems to not apply anymore (Nov. 2025) but still, if DFs are off, that's an issue!
 ```
 
     ## Type III Analysis of Variance Table with Satterthwaite's method
@@ -266,8 +259,8 @@ summary(WeedBio_Mod2) #RE captured correctly because number of groups in RE foll
     ## Formula:          WeedBiomass ~ Site * Year + CoverCrop + (1 | Site.Year/Block)
     ## Data: WintData
     ## 
-    ##      AIC      BIC   logLik deviance df.resid 
-    ##    503.3    531.7   -239.6    479.3       67 
+    ##       AIC       BIC    logLik -2*log(L)  df.resid 
+    ##     503.3     531.7    -239.6     479.3        67 
     ## 
     ## Random effects:
     ## 
@@ -295,12 +288,6 @@ summary(WeedBio_Mod2) #RE captured correctly because number of groups in RE foll
 ``` r
 simulateResiduals(WeedBio_Mod2, plot = TRUE) #much better, good enough to publish
 ```
-
-    ## Unable to calculate quantile regression for quantile 0.25. Possibly to few (unique) data points / predictions. Will be ommited in plots and significance calculations.
-
-    ## Unable to calculate quantile regression for quantile 0.5. Possibly to few (unique) data points / predictions. Will be ommited in plots and significance calculations.
-
-    ## Unable to calculate quantile regression for quantile 0.75. Possibly to few (unique) data points / predictions. Will be ommited in plots and significance calculations.
 
 ![](RandomEffects_code_files/figure-gfm/unnamed-chunk-1-7.png)<!-- -->
 
