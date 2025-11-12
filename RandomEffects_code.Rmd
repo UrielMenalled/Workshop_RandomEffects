@@ -5,21 +5,28 @@ editor_options:
   chunk_output_type: console
 ---
 
-#Loading
+# Loading
 
 ```{r Packages}
 library(lmerTest)
 library(performance)
 library(glmmTMB)
 library(DHARMa)
+library(ADER)
 library(tidyverse)
 
 options(contrasts = c("contr.sum", "contr.poly")) #setting contrasts
 ```
 
-Today we will be using a subset of data published in Menalled et al. (2023): <https://doi.org/10.1038/s41598-023-43987-x>
+Today we will be using two dataframes:
 
-This experiment looks at changes in weed communities across 10 cover crop treatments (5 summer cover crop treatments, 5 winter cover crop treatments). Today, we will just work with winter cover crops (i.e. tilled control, canola, cereal rye (CR), hairy vetch (HV), and HV x CR mix).
+1.  A subset of data published in Menalled et al. (2023): <https://doi.org/10.1038/s41598-023-43987-x>
+
+    This experiment looks at changes in weed communities across 10 cover crop treatments (5 summer cover crop treatments, 5 winter cover crop treatments). Today, we will just work with winter cover crops (i.e. tilled control, canola, cereal rye (CR), hairy vetch (HV), and HV x CR mix).
+
+2.  Richness of species in 45 sampling stations along the coastline of The Netherlands, mea- sured by two researches of the the RIKZ (Rijksinstituut voor Kust en Zee), i.e., the Dutch Institute for Coastal and Marine Management.
+
+# Cover Crop example
 
 ```{r Data, echo = T, results = 'hide'}
 #Each year is stored separately, I'll load them in, calculate total weed biomass, and combind the dataframes
@@ -67,7 +74,7 @@ As nice it would be to account for Site and Year through a random effect, we don
 
 ![Here is a nice picture of the map and experimental design of the data we are working with today](Example_MapDesign.png){width="452"}
 
-```{r}
+```{r Cover crop example}
 #create Site.Year variable
 WintData$Site.Year <- paste(WintData$Site,WintData$Year,sep = ".")
 WintData$Site.Year <- as.factor(WintData$Site.Year)
@@ -87,8 +94,7 @@ summary(WeedBio_Mod1) #RE captured correctly because number of groups in RE foll
 plot(WeedBio_Mod1) #terrible, as expected
 check_model(WeedBio_Mod1) #I'm mainly interested in pp_check (looks bad) and random effects check (looks okay)
 
-anova(WeedBio_Mod1) #while numerator DF look good, denominator degrees of freedom are 0, this comes from the singularity and is WRONG <-- this last comment seems to not apply anymore (Nov. 2025) but still, if DFs are off, that's an issue!
-anova(WeedBio_Mod1, ddf = "Kenward-Roger") #numerator AND denominator DF look good. Denominator df are all less then measurement number (80 plots) so good. If I added some predictor variable at a higher level then, it would have to have less denominator degrees of freedom than it's replication (i.e. if soil type was only across site.year.block, then its DenDF should not be more than 16)
+anova(WeedBio_Mod1)
 
 #now glmer
 WeedBio_Mod2 <- glmmTMB(WeedBiomass~Site*Year + CoverCrop + (1|Site.Year/Block),
@@ -97,6 +103,30 @@ WeedBio_Mod2 <- glmmTMB(WeedBiomass~Site*Year + CoverCrop + (1|Site.Year/Block),
 summary(WeedBio_Mod2) #RE captured correctly because number of groups in RE follows design
 simulateResiduals(WeedBio_Mod2, plot = TRUE) #much better, good enough to publish
 check_model(WeedBio_Mod2) #pp_check still shows some error around 0. All RE look good. Good enough!
-car::Anova(WeedBio_Mod2, type = 3) #unfortunately only car::Anova is possible for glmmTMB. but no singularity warning, so I feel good 
+car::Anova(WeedBio_Mod2, type = 3)
 ```
 
+# Beach example
+
+Sometimes, when you get singularity issues, this can throw off calculations of denominator degrees of freedom. The RIKZ dataset is a great way to look at denominator degrees of freedom. In this experiment, researchers looked at species richness (Richness) across the altitude (NAP) and sun exposure (Exposure). Exposure is the same with each beach.
+
+![](RIKZ_Design.png){width="466"}
+
+```{r KenwardRog}
+data("RIKZ")
+RIKZ_Wide <- RIKZ
+str(RIKZ_Wide) #C2 - I5 are species
+
+RIKZ_Long <-
+  RIKZ_Wide %>% 
+  mutate(across(C1:I5, ~ if_else(. > 0, 1, 0)),
+         Sample = rep(1:5,9),
+         Richness = rowSums(across(C1:I5)),
+         Exposure = exposure) %>% 
+  select(Beach, Sample, Exposure, NAP, Richness) 
+
+RIKZ_Exp <- lmer(Richness ~ NAP + Exposure +  (1|Beach), data = RIKZ_Long)
+summary(RIKZ_Exp)
+anova(RIKZ_Exp)  #defaults to Satterthwaite
+anova(RIKZ_Exp, ddf="Kenward-Roger")
+```
