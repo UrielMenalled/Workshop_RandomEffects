@@ -18,18 +18,18 @@ library(tidyverse)
 options(contrasts = c("contr.sum", "contr.poly")) #setting contrasts
 ```
 
-Today we will be using two dataframes:
+Today we will be using two data frames:
 
 1.  A subset of data published in Menalled et al. (2023): <https://doi.org/10.1038/s41598-023-43987-x>
 
     This experiment looks at changes in weed communities across 10 cover crop treatments (5 summer cover crop treatments, 5 winter cover crop treatments). Today, we will just work with winter cover crops (i.e. tilled control, canola, cereal rye (CR), hairy vetch (HV), and HV x CR mix).
 
-2.  Richness of species in 45 sampling stations along the coastline of The Netherlands, mea- sured by two researches of the the RIKZ (Rijksinstituut voor Kust en Zee), i.e., the Dutch Institute for Coastal and Marine Management.
+2.  Richness of species in 45 sampling stations along the coastline of The Netherlands, measured by two researches of the the RIKZ (Rijksinstituut voor Kust en Zee), i.e., the Dutch Institute for Coastal and Marine Management.
 
 # Cover Crop example
 
 ```{r Data, echo = T, results = 'hide'}
-#Each year is stored separately, I'll load them in, calculate total weed biomass, and combind the dataframes
+#Each year is stored separately, I'll load them in, calculate total weed biomass, and combined the data frames
 WintData1_tmp <- read.csv("https://ecommons.cornell.edu/server/api/core/bitstreams/adb24a0c-0b2c-4bd6-90ad-e203c270bba3/content")
 WintData2_tmp <- read.csv("https://ecommons.cornell.edu/server/api/core/bitstreams/f05bf7b9-3c15-48ec-9f28-0c978cf0560b/content")
 
@@ -108,7 +108,7 @@ car::Anova(WeedBio_Mod2, type = 3)
 
 # Beach example
 
-The RIKZ dataset is a great way to look at denominator degrees of freedom. In this experiment, researchers looked at species richness (Richness) across the altitude (NAP) and sun exposure (Exposure). Exposure is the same with each beach. Because you have repeated messurments at the beach level, non-independence at this level should be accounted for, let's use a random effect. In this case, observations at this level (Exposure) should have denominator degrees of freedom that less than the beach level (i.e., less than 9).
+The RIKZ data set is a great way to look at denominator degrees of freedom. In this experiment, researchers looked at species richness (Richness) across the altitude (NAP) and sun exposure (Exposure). Exposure is the same with each beach. Because you have repeated measurements at the beach level, non-independence at this level should be accounted for, let's use a random effect. In this case, observations at this level (Exposure) should have denominator degrees of freedom that less than the beach level (i.e., less than 9).
 
 ![](RIKZ_Design.png){width="466"}
 
@@ -132,7 +132,7 @@ anova(RIKZ_Mod1)
 
 When you have observations at multiple levels , like what we see in the RIKZ data, singularity in the random effects can cause issues with denominator degrees of freedom calculation. This is a *huge deal* as ANOVA is using degrees of freedom to calculate p-values.
 ```{r singularity}
-#randomly shuffeling beach around so that it accounts for no variance
+#randomly shuffling beach around so that it accounts for no variance
 RIKZ_Long <-
   RIKZ_Long %>% 
   mutate(Beach2 = rep(sample(1:5), 9))
