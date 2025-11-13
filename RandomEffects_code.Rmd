@@ -74,7 +74,7 @@ As nice it would be to account for Site and Year through a random effect, we don
 
 ![Here is a nice picture of the map and experimental design of the data we are working with today](Example_MapDesign.png){width="452"}
 
-```{r Cover crop example}
+```{r modeling}
 #create Site.Year variable
 WintData$Site.Year <- paste(WintData$Site,WintData$Year,sep = ".")
 WintData$Site.Year <- as.factor(WintData$Site.Year)
@@ -93,8 +93,8 @@ WeedBio_Mod1 <- lmer(WeedBiomass~Site*Year + CoverCrop + (1|Site.Year/Block), da
 summary(WeedBio_Mod1) #RE captured correctly because number of groups in RE follows design
 plot(WeedBio_Mod1) #terrible, as expected
 check_model(WeedBio_Mod1) #I'm mainly interested in pp_check (looks bad) and random effects check (looks okay)
-
 anova(WeedBio_Mod1)
+
 
 #now glmer
 WeedBio_Mod2 <- glmmTMB(WeedBiomass~Site*Year + CoverCrop + (1|Site.Year/Block),
@@ -108,11 +108,11 @@ car::Anova(WeedBio_Mod2, type = 3)
 
 # Beach example
 
-Sometimes, when you get singularity issues, this can throw off calculations of denominator degrees of freedom. The RIKZ dataset is a great way to look at denominator degrees of freedom. In this experiment, researchers looked at species richness (Richness) across the altitude (NAP) and sun exposure (Exposure). Exposure is the same with each beach.
+The RIKZ dataset is a great way to look at denominator degrees of freedom. In this experiment, researchers looked at species richness (Richness) across the altitude (NAP) and sun exposure (Exposure). Exposure is the same with each beach. Because you have repeated messurments at the beach level, non-independence at this level should be accounted for, let's use a random effect. In this case, observations at this level (Exposure) should have denominator degrees of freedom that less than the beach level (i.e., less than 9).
 
 ![](RIKZ_Design.png){width="466"}
 
-```{r KenwardRog}
+```{r data & modeling}
 data("RIKZ")
 RIKZ_Wide <- RIKZ
 str(RIKZ_Wide) #C2 - I5 are species
@@ -125,8 +125,21 @@ RIKZ_Long <-
          Exposure = exposure) %>% 
   select(Beach, Sample, Exposure, NAP, Richness) 
 
-RIKZ_Exp <- lmer(Richness ~ NAP + Exposure +  (1|Beach), data = RIKZ_Long)
-summary(RIKZ_Exp)
-anova(RIKZ_Exp)  #defaults to Satterthwaite
-anova(RIKZ_Exp, ddf="Kenward-Roger")
+RIKZ_Mod1 <- lmer(Richness ~ NAP + Exposure +  (1|Beach), data = RIKZ_Long)
+summary(RIKZ_Mod1)
+anova(RIKZ_Mod1)
+```
+
+When you have observations at multiple levels , like what we see in the RIKZ data, singularity in the random effects can cause issues with denominator degrees of freedom calculation. This is a *huge deal* as ANOVA is using degrees of freedom to calculate p-values.
+```{r singularity}
+#randomly shuffeling beach around so that it accounts for no variance
+RIKZ_Long <-
+  RIKZ_Long %>% 
+  mutate(Beach2 = rep(sample(1:5), 9))
+RIKZ_Mod2 <- lmer(Richness ~ NAP + Exposure + (1|Beach2),
+                  data = RIKZ_Long)
+summary(RIKZ_Mod2) #singularity warning shows that beach accounts for no variance
+anova(RIKZ_Mod2) #df for exposure is WRONGE, notice that Satterthwaite's method is used
+anova(RIKZ_Mod2, ddf = "Kenward-Roger") #Kenward-Roger denominator degrees of freedom will help solve this issue, often for real data—when there is some very small amount of variance—the impact of a Kenward-Roger is stronger. Unfortunately, there isn't a way to do a Kenward-Rodger in car::Anova(), at least to my knowledge...
+
 ```
